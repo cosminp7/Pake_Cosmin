@@ -1,4 +1,4 @@
-name: Build App With P Taylor CLI
+name: Build App With Pake CLI
 
 env:
   NODE_VERSION: "22"
@@ -99,7 +99,6 @@ jobs:
         shell: bash
         run: |
           ARGS=("${{ inputs.url }}" "--name" "${{ inputs.name }}")
-          ARGS+=("--app")
           ARGS+=("--user-agent" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
 
           if [ -n "${{ inputs.icon }}" ]; then
