@@ -13,7 +13,6 @@ on:
         default: "macos-latest"
         type: choice
         options:
-          - "windows-latest"
           - "macos-latest"
           - "ubuntu-24.04"
       url:
@@ -98,16 +97,15 @@ jobs:
           key: ${{ runner.os }}-cargo-pake-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Build App (Linux/macOS)
-        if: runner.os != 'Windows'
         timeout-minutes: 25
         shell: bash
         run: |
+          if [ -n "${{ inputs.inject_css }}" ]; then
+            echo "${{ inputs.inject_css }}" > injection.css
+          fi
+
           ARGS=("${{ inputs.url }}" "--name" "${{ inputs.name }}")
           ARGS+=("--user-agent" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
-
-          if [ -n "${{ inputs.inject_css }}" ]; then
-            ARGS+=("--inject-css" "${{ inputs.inject_css }}")
-          fi
 
           if [ -n "${{ inputs.icon }}" ]; then
             ARGS+=("--icon" "${{ inputs.icon }}")
@@ -137,47 +135,13 @@ jobs:
             ARGS+=("--targets" "${{ inputs.targets }}")
           fi
 
+          if [ -f injection.css ]; then
+            mkdir -p src-tauri
+            cp injection.css src-tauri/pake.css
+          fi
+
           echo "Running build..."
           node dist/cli.js "${ARGS[@]}"
-
-
-      - name: Build App (Windows)
-        if: runner.os == 'Windows'
-        timeout-minutes: 25
-        shell: pwsh
-        run: |
-          $args = "${{ inputs.url }}", "--name", "${{ inputs.name }}"
-          $args += "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-          $args += "--data-identifier", "com.garmin.connect.pakeapp"
-
-          if ("${{ inputs.inject_css }}" -ne "") {
-            $args += "--inject-css", "${{ inputs.inject_css }}"
-          }
-
-          if ("${{ inputs.icon }}" -ne "") {
-            $args += "--icon", "${{ inputs.icon }}"
-          }
-
-          if ("${{ inputs.width }}" -ne "") {
-            $args += "--width", "${{ inputs.width }}"
-          }
-
-          if ("${{ inputs.height }}" -ne "") {
-            $args += "--height", "${{ inputs.height }}"
-          }
-
-          if ("${{ inputs.fullscreen }}" -eq "true") {
-            $args += "--fullscreen"
-          }
-
-          if ("${{ inputs.hide_title_bar }}" -eq "true") {
-            $args += "--hide-title-bar"
-          }
-
-          Write-Host "Running: node dist/cli.js $($args -join ' ')"
-          node dist/cli.js $args
-
-          git checkout -- src-tauri/Cargo.lock
 
       - name: Upload DMG (macOS)
         if: runner.os == 'macOS'
@@ -204,14 +168,6 @@ jobs:
           path: ${{ inputs.name }}.AppImage
           retention-days: 3
           if-no-files-found: ignore
-
-      - name: Upload MSI (Windows)
-        if: runner.os == 'Windows'
-        uses: actions/upload-artifact@v6
-        with:
-          name: ${{ inputs.name }}-Windows
-          path: ${{ inputs.name }}.msi
-          retention-days: 3
 
       - name: Rust cache store
         uses: actions/cache/save@v4.2.0
