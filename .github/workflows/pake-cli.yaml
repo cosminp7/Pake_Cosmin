@@ -100,12 +100,21 @@ jobs:
         timeout-minutes: 25
         shell: bash
         run: |
+          echo "
+          window.addEventListener('DOMContentLoaded', () => {
+            if (window.AsWebview || navigator.userAgent.includes('Tauri')) {
+              Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+            }
+          });
+          " > fix.js
+
           if [ -n "${{ inputs.inject_css }}" ]; then
             echo "${{ inputs.inject_css }}" > injection.css
           fi
 
           ARGS=("${{ inputs.url }}" "--name" "${{ inputs.name }}")
           ARGS+=("--user-agent" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
+          ARGS+=("--inject" "./fix.js")
 
           if [ -n "${{ inputs.icon }}" ]; then
             ARGS+=("--icon" "${{ inputs.icon }}")
@@ -131,10 +140,6 @@ jobs:
             ARGS+=("--multi-arch")
           fi
 
-          if [ -n "${{ inputs.targets }}" ] && [ "${{ runner.os }}" == "Linux" ]; then
-            ARGS+=("--targets" "${{ inputs.targets }}")
-          fi
-
           if [ -f injection.css ]; then
             mkdir -p src-tauri
             cp injection.css src-tauri/pake.css
@@ -142,6 +147,7 @@ jobs:
 
           echo "Running build..."
           node dist/cli.js "${ARGS[@]}"
+
 
       - name: Upload DMG (macOS)
         if: runner.os == 'macOS'
