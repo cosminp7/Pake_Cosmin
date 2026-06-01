@@ -103,10 +103,7 @@ jobs:
         shell: bash
         run: |
           ARGS=("${{ inputs.url }}" "--name" "${{ inputs.name }}")
-          
-          # User-Agent modern și identificator pentru reținerea login-ului
           ARGS+=("--user-agent" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
-          ARGS+=("--data-identifier" "com.garmin.connect.pakeapp")
 
           if [ -n "${{ inputs.inject_css }}" ]; then
             ARGS+=("--inject-css" "${{ inputs.inject_css }}")
@@ -140,8 +137,9 @@ jobs:
             ARGS+=("--targets" "${{ inputs.targets }}")
           fi
 
-          echo "Running: node dist/cli.js ${ARGS[@]}"
+          echo "Running build..."
           node dist/cli.js "${ARGS[@]}"
+
 
       - name: Build App (Windows)
         if: runner.os == 'Windows'
